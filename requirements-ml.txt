@@ -1,0 +1,11 @@
+# ToneRoom V2 — ML requirements (optional; needed for respeak/script).
+# Install AFTER requirements.txt:
+#   .venv/bin/pip install -r requirements-ml.txt
+# Then download the models (NOT bundled here):
+#   bash scripts/download_models.sh
+#
+# faster-whisper: MIT. CPU int8 by default (see app/config.py).
+faster-whisper==1.2.1
+# sherpa-onnx: Apache-2.0. Provides the `sherpa-onnx-offline-tts` CLI
+# used by app/pipeline/tts.py for Kyutai Pocket TTS.
+sherpa-onnx==2.0.3

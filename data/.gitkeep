@@ -1,0 +1,3 @@
+Job files live here at runtime. The directory itself is committed;
+its contents are gitignored. Do not put test clips or voice samples
+in the repo — keep them in /tmp.

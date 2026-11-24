@@ -1,0 +1,17 @@
+# ToneRoom V2 — local / VPS compose file.
+# Usage:
+#   cp .env.example .env   # then set TONEROOM_API_KEY
+#   docker compose up --build
+#   curl http://localhost:8000/health
+# The service is on port 8000 only inside the compose network by
+# default; expose it through nginx (docs/deploy.md), never directly.
+services:
+  toneroom:
+    build: .
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    restart: unless-stopped

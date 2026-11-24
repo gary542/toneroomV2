@@ -1,0 +1,12 @@
+# ToneRoom V2 — never commit uploads, outputs, voices or models.
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
+data/
+models/
+*.mp4
+*.wav
+*.mp3
+.DS_Store
