@@ -14,8 +14,17 @@ cd models
 #    Source: https://k2-fsa.github.io/sherpa/onnx/tts/pocket.html
 if [ ! -d pocket-tts-int8-2026-01-26 ]; then
   wget https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2
-  tar xf sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2
+  # --no-same-owner: the archive is owned by uid 501, which cannot be
+  # restored on this machine; without it tar exits non-zero even though
+  # the files extract fine (fixed 24 Nov 2026, Phase 2 test).
+  tar --no-same-owner -xf sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2
   rm sherpa-onnx-pocket-tts-int8-2026-01-26.tar.bz2
+  # The archive extracts to sherpa-onnx-pocket-tts-int8-2026-01-26/,
+  # but config.py / .env.example expect pocket-tts-int8-2026-01-26/
+  # — rename it (fixed 24 Nov 2026, Phase 2 test).
+  if [ -d sherpa-onnx-pocket-tts-int8-2026-01-26 ]; then
+    mv sherpa-onnx-pocket-tts-int8-2026-01-26 pocket-tts-int8-2026-01-26
+  fi
   echo "Pocket TTS model ready in models/pocket-tts-int8-2026-01-26"
 else
   echo "Pocket TTS model already present, skipping."
@@ -24,8 +33,11 @@ fi
 # 2. faster-whisper model ("small" by default; override with
 #    TONEROOM_WHISPER_MODEL=base|medium|large-v3 before running).
 #    Downloads from Hugging Face into the faster-whisper cache.
+#    Use the venv python when present: system python3 does not have
+#    faster-whisper installed (fixed 24 Nov 2026, Phase 2 test).
 MODEL="${TONEROOM_WHISPER_MODEL:-small}"
-python3 -c "
+if [ -x .venv/bin/python ]; then PY=.venv/bin/python; else PY=python3; fi
+"$PY" -c "
 from faster_whisper import WhisperModel
 WhisperModel('$MODEL', device='cpu', compute_type='int8')
 print('faster-whisper model $MODEL ready')

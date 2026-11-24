@@ -15,12 +15,41 @@ and the message says exactly what to install.
 """
 
 from pathlib import Path
+import wave
+
+import numpy as np
 
 from .. import config
 
 
 class ModelNotAvailable(RuntimeError):
     """Raised when a model or its runtime is not installed/configured."""
+
+
+def _read_wav_mono16k(wav_path: Path) -> np.ndarray:
+    """Read a mono 16 kHz PCM16 WAV as float32 samples in [-1, 1].
+
+    The pipeline always produces this exact format (see
+    app/pipeline/audio.py extract_audio), so stdlib ``wave`` is enough
+    here. This deliberately avoids faster-whisper's own audio decoding,
+    which goes through PyAV: sherpa-onnx 2.0.3 pulls in av 19.x, and
+    faster-whisper 1.2.1 calls ``av.open(..., metadata_errors=...)``,
+    which av 19 removed — so passing a file path fails with
+    ``TypeError: open() got an unexpected keyword argument
+    'metadata_errors'``. Passing a numpy array skips that path entirely.
+    """
+    with wave.open(str(wav_path), "rb") as w:
+        if w.getnchannels() != 1 or w.getsampwidth() != 2:
+            raise ValueError(
+                f"expected mono 16-bit WAV, got {w.getnchannels()} channels, "
+                f"{w.getsampwidth() * 8}-bit: {wav_path}"
+            )
+        if w.getframerate() != 16000:
+            raise ValueError(
+                f"expected 16 kHz WAV, got {w.getframerate()} Hz: {wav_path}"
+            )
+        frames = w.readframes(w.getnframes())
+    return np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
 
 
 def transcribe(wav_path: Path, language: str = "en") -> list[dict]:
@@ -44,7 +73,7 @@ def transcribe(wav_path: Path, language: str = "en") -> list[dict]:
         compute_type=config.WHISPER_COMPUTE_TYPE,
     )
     segments, _info = model.transcribe(
-        str(wav_path),
+        _read_wav_mono16k(wav_path),
         language=language,
         beam_size=5,
         word_timestamps=True,

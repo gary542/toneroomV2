@@ -125,8 +125,14 @@ async def create_job(
             with ref_dest.open("wb") as out:
                 shutil.copyfileobj(reference.file, out)
             # Normalise the reference to the WAV the TTS step expects.
+            # Extract via a temp file: if the upload itself was a WAV,
+            # the source is already named reference.wav, and ffmpeg
+            # refuses to write its input file onto itself (fixed
+            # 24 Nov 2026, Phase 2 test).
             from .pipeline.audio import extract_audio
-            extract_audio(ref_dest, job.dir / "reference.wav", sample_rate=16000)
+            _tmp_ref = job.dir / "reference_tmp.wav"
+            extract_audio(ref_dest, _tmp_ref, sample_rate=16000)
+            _tmp_ref.replace(job.dir / "reference.wav")
     except HTTPException:
         job.status = "failed"
         job.error = "upload rejected (see response)"
